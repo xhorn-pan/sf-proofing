@@ -1,0 +1,7 @@
+*.vo*
+*.aux
+*.glob
+
+Makefile
+Makefile.conf
+.Makefile.d
