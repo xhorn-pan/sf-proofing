@@ -208,3 +208,85 @@ Example test_ltb2: (ltb 2 4) = true.
 Proof. reflexivity. Qed.
 Example test_ltb3: (ltb 4 2) = false.
 Proof. reflexivity. Qed.
+
+
+(* Proof by Rewriting exercise *)
+Theorem plus_id_exercise : forall n m o : nat,
+    n = m -> m = o -> n + m = m + o.
+Proof.
+  intros n m o.
+  intros H1.
+  intros H2.
+  rewrite -> H1.
+  rewrite -> H2.
+  reflexivity.
+  Qed.
+
+Check mult_n_O.
+Check mult_n_Sm.
+(* use mult_n_Sm and mult_n_O to prove the following theorem *)
+Theorem mutl_n_1: forall p : nat, p * 1 = p.
+Proof.
+  intros p.
+  rewrite <- mult_n_Sm.
+  rewrite <- mult_n_O.
+  reflexivity.
+  Qed.
+
+(* Proof by case analysis: using /destruct/, it generates two subgoals,
+ then prove separately *)
+
+Theorem plus_1_neq_0 : forall n : nat, (n + 1) =? 0 = false.
+Proof.
+  intros n. destruct n as [| n'] eqn:E.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem plus_1_neq_0' : forall n : nat, (n + 1) =? 0 = false.
+Proof.
+  intros [|n].
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+
+Theorem andb_commutative : forall b c, andb b c = andb c b.
+Proof.
+  intros b c.
+  destruct b eqn:Eb.
+  - destruct c eqn:Ec.
+    + reflexivity.
+    + reflexivity.
+  - destruct c eqn:Ec.
+    + reflexivity.
+    + reflexivity.
+Qed.
+
+Theorem andb_commutative' : forall b c,
+    andb b c = andb c b.
+Proof.
+  intros [] [].
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
+            
+
+
+  
+Theorem andb_true_elim2 : forall b c : bool,
+    andb b c = true -> c = true.
+Proof.
+  intros b c.
+  destruct b eqn:Eb.
+  - destruct c eqn:Ec.
+    + reflexivity.
+    + simpl. intros H. rewrite -> H. reflexivity.
+  - destruct c eqn:Ec.
+    + simpl. intros H. reflexivity.
+    + simpl. intros H. rewrite -> H. reflexivity.
+Qed.
+
+(* More Exercises TBC*)
