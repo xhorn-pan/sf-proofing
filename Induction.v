@@ -255,7 +255,6 @@ Fixpoint incr (m:bin) : bin :=
 Fixpoint bin_to_nat (m: bin) : nat :=
   match m with
   | Z => O
-  | B1 Z => S O
   | B0 m' =>   (bin_to_nat m') + (bin_to_nat m')
   | B1 m' => S ((bin_to_nat m') + (bin_to_nat m'))
   end.
@@ -282,10 +281,86 @@ Proof.
 Qed.
 
 
-(* 
 Fixpoint nat_to_bin (n: nat) : bin :=
   match n with
   | O => Z
-  | S O => B1 Z
-  | S  => 
-             *)
+  | S n' => incr (nat_to_bin n')
+  end.
+
+Compute (nat_to_bin 10).
+
+Theorem nat_bin_nat : forall n, bin_to_nat (nat_to_bin n) = n.
+Proof.
+  intros n.
+  induction n as [|n' IHn'].
+  - reflexivity.
+  - simpl.
+    rewrite bin_to_nat_pres_incr.
+    rewrite IHn'.
+    reflexivity.
+Qed.
+
+Lemma double_incr : forall n: nat, double (S n) = S (S (double n)).
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite <- IHn.
+    reflexivity.
+Qed.
+
+Definition double_bin (b: bin) : bin :=
+  match b with
+  | Z => Z
+  | b' => B0 b'
+  end.
+
+Lemma double_incr_bin : forall b, double_bin (incr b) = incr (incr (double_bin b)).
+Proof.
+  intros.
+  simpl.
+  induction b.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Fixpoint normalize (b: bin) : bin :=
+  match b with
+  | Z => Z
+  | B0 b' => double_bin (normalize b')
+  | B1 b' => incr (double_bin (normalize b'))
+  end.
+
+Compute (normalize (B0 (B1 Z))).
+Compute (normalize (B1 (B0 (B1 Z)))).
+
+Lemma double_n2b_bin : forall n: nat, double_bin (nat_to_bin n) = nat_to_bin (double n).
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite double_incr_bin.
+    rewrite IHn.
+    reflexivity.
+Qed.
+
+Theorem bin_nat_bin : forall b, nat_to_bin (bin_to_nat b) = normalize b.
+Proof.
+  intros.
+  induction b.
+  - reflexivity.
+  - simpl.
+    rewrite <- IHb. (* double_bin (nat_to_bin n) = nat_to_bin n + nat_to_bin n *)
+    rewrite <- double_plus.
+    rewrite -> double_n2b_bin.
+    reflexivity.
+  - simpl.
+    rewrite <- IHb.
+    rewrite -> double_n2b_bin.
+    rewrite -> double_plus.
+    reflexivity.
+Qed.
+(* can be simplified ?? *)
