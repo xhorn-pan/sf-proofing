@@ -156,11 +156,11 @@ Definition snd {X Y : Type} (p : X * Y) : Y :=
   | (x, y) => y
   end.
       
-Fixpoint conbine {X Y : Type} (lx : list X) (ly : list Y) : list (X * Y) :=
+Fixpoint combine {X Y : Type} (lx : list X) (ly : list Y) : list (X * Y) :=
   match lx, ly with
   | [], _ => []
   | _, [] => []
-  | x :: tx, y :: ty => (x, y) :: (conbine tx ty)
+  | x :: tx, y :: ty => (x, y) :: (combine tx ty)
   end.
 
 Fixpoint  split {X Y : Type} (l : list (X*Y)): (list X) * (list Y) :=

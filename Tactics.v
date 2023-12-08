@@ -292,4 +292,238 @@ Definition square n := n * n.
 
 Lemma square_mult : forall n m, square (n * m) = square n * square m.
 Proof.
-  Abort.
+  intros.
+  unfold square.
+  rewrite mult_assoc.
+  assert (H : n * m * n = n * n * m).
+  { rewrite mul_comm. apply mult_assoc. }
+  rewrite H. rewrite mult_assoc. reflexivity.
+Qed.
+
+Definition foo (x: nat) := 5.
+
+Fact silly_fact_1: forall m, foo m + 1 = foo (m + 1) + 1.
+Proof. intros. simpl. reflexivity. Qed.
+
+Definition bar x :=
+  match x with
+  | O => 5
+  | S _ => 5
+  end.
+
+Fact silly_fact_2_failed: forall m, bar m + 1 = bar (m + 1) + 1.
+Proof.
+  intros.
+  simpl. (* Does nothing *)
+Abort.
+
+  
+Fact silly_fact_2 : forall m, bar m + 1 = bar (m + 1) + 1.
+Proof.
+  intros.
+  destruct m eqn:E.
+  - simpl. reflexivity.
+  - simpl. reflexivity.
+Qed.
+
+Fact silly_fact_2' : forall m, bar m + 1 = bar (m + 1) + 1.
+Proof.
+  intros.
+  unfold bar.
+  destruct m.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+(* using destruct on compound expressions *)
+Definition sillyfun (n: nat) : bool :=
+  if n =? 3 then false
+  else if n =? 5 then false
+       else false.
+
+Theorem sillyfun_false : forall (n: nat), sillyfun n = false.
+Proof.
+  intros.
+  unfold sillyfun.
+  destruct (n =? 3) eqn:E1.
+  - reflexivity.
+  - destruct (n =? 5) eqn:E2.
+    + reflexivity.
+    + reflexivity.
+Qed.
+
+(* exercise combine_split *)
+Fixpoint split {X Y:Type} (l : list (X * Y)) : (list X) * (list Y) :=
+  match l with
+  | [] => ([], [])
+  | (x, y) :: t => match split t with
+                 | (lx, ly) => (x :: lx, y :: ly)
+                 end
+  end. 
+
+Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2, split l = (l1, l2) -> combine l1 l2 = l.
+Proof.
+  intros.
+  induction l as [| (x, y) l'].
+  - intros.
+    inversion H.
+    reflexivity.
+  - intros.
+    generalize dependent l2.
+    generalize dependent l1.
+    destruct (split l') eqn:E.
+    + simpl.
+Abort.
+
+
+(* eqn: qualifier can carry important information to prove the goal *)
+Theorem bool_fn_applied_thrice : forall (f: bool -> bool) (b:bool), f (f (f b)) = f b.
+Proof.
+  intros.
+  destruct b.
+  - destruct (f true) eqn:Eftrue.
+    + rewrite Eftrue. apply Eftrue.
+    + destruct (f false) eqn:Effalse.
+      ++ apply Eftrue.
+      ++ apply Effalse.
+  - destruct (f false) eqn:Effalse.
+    + destruct (f true) eqn:Eftrue.
+      ++ apply Eftrue.
+      ++ apply Effalse.
+    + rewrite Effalse. apply Effalse.
+Qed.
+
+(* Review
+  intros: move hypothesises/variables from goal to context.
+  reflexivity: finish the proof(when the goal looks like e=e)
+  apply: prove goal using a hypothesis, lemma, or contructor
+  apply ... in H: apply a hypothesis, lemma, or contructor to a hypothesis in the context (forward reasoning)
+  apply ... with ... : explicity specify values for variables that cannot be determined by pattern matching
+  simpl: simplify computations in the goal.
+  simpl in H. simplify computations in a hypothesis.
+  rewrite: use an equality hypothesis (or lemma) to rewrite the goal.
+  rewrite ... in H: ... or a hypothesis.
+  symmetry: changes a goal of the form t = u into u = t.
+  symmetry in H. changes a hypothesis of form t = u into u = t.
+  transitivity y: prove a goal x = z by proving two new subgoals, x = y and y = z.
+  unfold: replace a defined constant by its right-hand side in the goal.
+  unfold ... in H: ... or a hypothesis.
+  destruct ... as ...: case analysis on values of inductively defined types.
+  destruct ... eqn:... : specify the name of an equation to be added to the context, recording the result of the case analysis.
+  induction ... as ...: induction on values of inductively defined types.
+  injection ... as ...: reason by injectivity on equalitues between values of inductively defined types.
+  discriminate: reason by disjointness of contructors on equalitues between values of inductively defined types.
+  assert (H:e) (or assert (e) as H): introduce a 'local lemma' e and call it H.
+  generalize dependent x: move the variable x (and anything else that depends on it) from the context back to a explicit hypothesis in the goal formula.
+  f_equal: change a goal of the form f x = f y into x = y.
+*)
+
+Check eqb_true.
+
+Theorem eqb_sym : forall (n m: nat), (n =? m) = (m =? n).
+Proof.
+  intros.
+  generalize dependent m.
+  induction n.
+  - intros.
+    destruct m.
+    + reflexivity.
+    + reflexivity.
+  - intros.
+    induction m.
+    + reflexivity.
+    + simpl.
+      apply IHn.
+Qed.
+
+Theorem eqb_trans: forall n m p, n =? m = true -> m =? p = true -> n =? p = true.
+Proof.
+  intros.
+  apply eqb_true in H.
+  apply eqb_true in H0.
+  rewrite H.
+  rewrite H0.
+  apply eqb_refl.
+Qed.
+
+(* exercise split_combine *)
+Definition split_combine_statement : Prop
+  (* (": Prop" means that we are giving a name to a
+     logical proposition here.) *)
+  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Theorem split_combine : split_combine_statement.
+Proof.
+(* FILL IN HERE *) Admitted.
+
+Print filter.
+
+(* exercise filter_exercise *)
+Theorem filter_exercise : forall (X : Type) (test : X -> bool) (x : X) (l lf : list X),
+    filter test l = x :: lf -> test x = true.
+Proof.
+  intros.
+  destruct l.
+  - discriminate.
+  - destruct (test x).
+    + reflexivity.
+    + generalize dependent x.
+      intros.
+      inversion H.
+      
+Abort.
+
+(* forall_exists_challenge *)
+Fixpoint forallb {X : Type} (f : X -> bool) (l : list X) : bool :=
+    match l with
+    | [] => true
+    | x :: l' => f x && forallb f l'
+    end.
+
+Fixpoint existsb {X: Type} (f : X -> bool) (l : list X) : bool :=
+  match l with
+  | [] => false
+  | x :: l' => f x || existsb f l'
+  end.
+
+Example test_forallb_1 : forallb odd [1;3;5;7;9] = true.
+Proof. reflexivity. Qed.
+Example test_forallb_2 : forallb negb [false;false] = true.
+Proof. reflexivity. Qed.
+Example test_forallb_3 : forallb even [0;2;4;5] = false.
+Proof. reflexivity. Qed.
+Example test_forallb_4 : forallb (eqb 5) [] = true.
+Proof. reflexivity. Qed.
+
+Example test_existsb_1 : existsb (eqb 5) [0;2;3;6] = false.
+Proof. reflexivity. Qed.
+Example test_existsb_2 : existsb (andb true) [true;true;false] = true.
+Proof. reflexivity. Qed.
+Example test_existsb_3 : existsb odd [1;0;0;0;0;3] = true.
+Proof. reflexivity. Qed.
+Example test_existsb_4 : existsb even [] = false.
+Proof. reflexivity. Qed.
+
+Definition existsb' {X : Type} (f : X -> bool) (l : list X) : bool := negb (forallb negb (map f l)).
+
+Example test_existsb'_1 : existsb' (eqb 5) [0;2;3;6] = false.
+Proof. reflexivity. Qed.
+Example test_existsb'_2 : existsb' (andb true) [true;true;false] = true.
+Proof. reflexivity. Qed.
+Example test_existsb'_3 : existsb' odd [1;0;0;0;0;3] = true.
+Proof. reflexivity. Qed.
+Example test_existsb'_4 : existsb' even [] = false.
+Proof. reflexivity. Qed.
+
+Theorem existsb_existb' : forall (X:Type) (f: X-> bool) (l: list X),
+    existsb f l = existsb' f l.
+Proof.
+  intros.
+  induction l.
+  - unfold existsb'.
+    simpl.
+    reflexivity.
+  - simpl.
+    rewrite -> IHl.
+    unfold existsb'.
+    destruct (map f (x :: l)) eqn:Efx.
+Abort.
