@@ -428,7 +428,22 @@ Qed.
 
 Theorem plus_exists_leb : forall n m, (exists x, m = n + x) -> n <=? m = true.
 Proof.
-Abort.
+  intros.
+  generalize dependent m.
+  induction n.
+  - reflexivity.
+  - intros.
+    destruct m.
+    + destruct H.
+      discriminate H.
+    + destruct H.
+      simpl in H.
+      apply S_injective in H.
+      simpl.
+      apply IHn.  (* ** *)
+      exists x.
+      apply H.
+Qed.
 
 (* Programming with propositions *)
 Fixpoint In {A: Type} (x : A) (l: list A) : Prop :=
