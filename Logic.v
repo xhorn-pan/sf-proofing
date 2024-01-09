@@ -124,6 +124,7 @@ Qed.
 Theorem not_implies_our_not : forall (P: Prop), ~P -> (forall (Q:Prop), P -> Q).
 Proof.
   intros.
+  unfold not in H.
   destruct H.
   apply H0.
 Qed.
@@ -403,22 +404,27 @@ Proof.
       apply H.
 Qed.
 
+
 Theorem leb_plus_exists : forall n m, n <=? m = true -> exists x, m = n + x.
 Proof.
   intros.
+  generalize dependent m.
   induction n as [|n' IHn'].
-  - destruct m eqn:Em.
-    + exists 0.
-      reflexivity.
-    + exists m.
-      rewrite Em.
-      reflexivity.
-  - destruct m eqn:Em.
-    rewrite <- H in IHn'.
-    destruct IHn'.
-    simpl.
-    simpl in H.
-Abort.
+  - intros.
+    exists m.
+    reflexivity.
+  - intros m.
+    destruct m.
+    + intros H.
+      discriminate H.
+    + simpl.
+      intros.
+      apply IHn' in H.
+      destruct H.
+      exists x.
+      f_equal.
+      apply H.
+Qed.
 
 Theorem plus_exists_leb : forall n m, (exists x, m = n + x) -> n <=? m = true.
 Proof.
