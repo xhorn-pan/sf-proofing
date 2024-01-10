@@ -461,7 +461,7 @@ Proof.
   left.
   reflexivity.
 Qed.
-  
+
 Example In_example_2 : forall n, In n [2;4] -> exists n', n = 2 * n'.
 Proof.
   simpl.
@@ -500,19 +500,83 @@ Proof.
       apply H.
 Qed.
 
+
+Theorem and_distributes_over_or : forall P Q R: Prop, P /\ (Q \/ R) <-> (P /\ Q) \/ (P /\ R).
+Proof.
+  split.
+  - intros [HP [HQ | HR]].
+    + left.
+      split.
+      ++ apply HP.
+      ++ apply HQ.
+    + right.
+      split.
+      ++ apply HP.
+      ++ apply HR.
+  - intros.
+    split.
+    ++ destruct H.
+       apply proj1 in H.
+       apply H.
+       apply proj1 in H.
+       apply H.
+    ++ destruct H.
+       left.
+       apply proj2 in H.
+       apply H.
+       right.
+       apply proj2 in H.
+       apply H.
+Qed.
+
 Theorem In_map_iff : forall (A B : Type) (f : A -> B) (l : list A) (y : B),
     In y (map f l) <-> exists x, f x = y /\ In x l.
 Proof.
   intros.
+  generalize dependent y.
   split.
   - induction l as [|x' l' IHl'].
     + simpl.
       intros.
       exfalso.
       apply H.
-    + simpl.
-      intros.
+    + intros [H | H].
+      ++ exists x'.
+         split.
+         +++ apply H.
+         +++ left. reflexivity.
+      ++ apply IHl' in H.
+         destruct H.
+         exists x.
+         split.
+         destruct H.
+         +++ apply H.
+         +++ simpl.
+             right.
+             destruct H.
+             apply H0.
+  - induction l as [|x' l' IHl'].
+    + intros H.
       destruct H.
-      ++
-Abort.
-    
+      destruct H.
+      simpl in H0.
+      simpl.
+      apply H0.
+    + intros.
+      simpl.
+      simpl in H.
+      destruct H.
+      apply and_distributes_over_or in H.
+      destruct H.
+      ++ left.
+         destruct H.
+         rewrite <- H0 in H.
+         apply H.
+      ++ right.
+         apply IHl'.
+         exists x.
+         apply H.
+Qed.
+
+
+
