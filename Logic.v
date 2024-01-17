@@ -364,6 +364,8 @@ Proof.
 Qed.
 
 (* Existential Quantification *)
+Definition Even x := exists n : nat, x = double n.
+
 Theorem exists_example_2 : forall n, (exists m, n = 4 + m) -> (exists o, n = 2 + o).
 Proof.
   intros.
@@ -501,7 +503,7 @@ Proof.
 Qed.
 
 
-Theorem and_distributes_over_or : forall P Q R: Prop, P /\ (Q \/ R) <-> (P /\ Q) \/ (P /\ R).
+(* Theorem and_distributes_over_or : forall P Q R: Prop, P /\ (Q \/ R) <-> (P /\ Q) \/ (P /\ R).
 Proof.
   split.
   - intros [HP [HQ | HR]].
@@ -527,7 +529,7 @@ Proof.
        right.
        apply proj2 in H.
        apply H.
-Qed.
+Qed. *)
 
 Theorem In_map_iff : forall (A B : Type) (f : A -> B) (l : list A) (y : B),
     In y (map f l) <-> exists x, f x = y /\ In x l.
@@ -555,7 +557,12 @@ Proof.
              right.
              destruct H.
              apply H0.
-  - induction l as [|x' l' IHl'].
+  - intros [x [F I]].
+    rewrite <- F.
+    apply In_map.
+    apply I.
+
+    (* induction l as [|x' l' IHl'].
     + intros H.
       destruct H.
       destruct H.
@@ -575,8 +582,373 @@ Proof.
       ++ right.
          apply IHl'.
          exists x.
+         apply H. *)
+Qed.
+
+Theorem In_app_iff : forall A l1 l2 (a:A), In a (l1 ++ l2) <-> In a l1 \/ In a l2.
+Proof.
+  split.
+  - induction l1 as [|x1' l1' IHl1'].
+    + simpl. intros.
+      right.
+      apply H.
+    + induction l2 as [|x2' l2' IHl2'].
+      ++ simpl.
+         intros.
+         destruct H as [H | H].
+         +++ left. left.
+             apply H.
+         +++ apply IHl1' in H.
+             apply or_assoc.
+             right.
+             apply H.
+      ++ simpl.
+         intros [H1 | H2].
+         +++ left. left. apply H1.
+         +++ apply IHl1' in H2.
+             simpl in H2.
+             destruct H2.
+             { left. right. apply H.}
+             { right. apply H.}
+  - intros.
+    induction l1 as [|x1' l1' IHl1'].
+    + simpl. simpl in H.
+      destruct H.
+      ++ exfalso. apply H.
+      ++ apply H.
+    + simpl.
+      simpl in H.
+      destruct H as [[H|H]|H].
+      ++ left. apply H.
+      ++ right. apply IHl1'. left. apply H.
+      ++ right. apply IHl1'. right. apply H.
+Qed.
+
+Fixpoint All  {T: Type} (P : T -> Prop) (l : list T) : Prop :=
+  match l with
+  | [] => True
+  | x' :: l' => P x' /\ All P l'
+  end.
+
+Theorem All_In : forall T (P : T -> Prop) (l : list T), (forall x, In x l -> P x) <-> All P l.
+Proof.
+  intros. split.
+  - induction l as [|h t].
+    + reflexivity.
+    + intros.
+      simpl.
+      split.
+      ++ apply H. (* ** *)
+         simpl.
+         left.
+         reflexivity.
+      ++ apply IHt.
+         intros.
          apply H.
+         simpl.
+         right.
+         apply H0.
+  - induction l.
+    + intros. inversion H0.
+    + intros.
+      simpl in H0.
+      simpl in H.
+      destruct H.
+      destruct H0.
+      rewrite -> H0 in H.
+      apply H.
+      apply IHl.
+      apply H1.
+      apply H0.
+Qed.
+
+Definition conbine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+  fun n => if odd n then Podd n else Peven n.
+
+Theorem conbine_odd_even_intro : forall (Podd Peven : nat -> Prop) (n : nat),
+    (odd n = true -> Podd n) -> (odd n = false -> Peven n) -> conbine_odd_even Podd Peven n.
+Proof.
+  intros.
+  unfold conbine_odd_even.
+  destruct (odd n).
+  - apply H. reflexivity.
+  - apply H0. reflexivity.
+Qed.
+
+Theorem combine_odd_even_elim_odd : forall (Podd Peven: nat -> Prop) (n : nat),
+    conbine_odd_even Podd Peven n -> odd n = true -> Podd n.
+Proof.
+  intros.
+  unfold conbine_odd_even in H.
+  destruct (odd n).
+  - apply H.
+  - inversion H0.
 Qed.
 
 
+Theorem combine_odd_even_elim_even : forall (Podd Peven: nat -> Prop) (n : nat),
+    conbine_odd_even Podd Peven n -> odd n = false -> Peven n.
+Proof.
+  intros.
+  unfold conbine_odd_even in H.
+  destruct (odd n).
+  - inversion H0.
+  - apply H.
+Qed.
+
+(* Applying Theorems to Arguments *)
+Lemma add_comm3_take3 : forall x y z, x + (y + z) = (z + y) + x.
+Proof.
+  intros.
+  rewrite add_comm.
+  rewrite (add_comm z y).
+  reflexivity.
+Qed.
+
+Theorem in_not_nil : forall A (x : A) (l : list A), In x l -> l <> [].
+Proof.
+Admitted.
+Check in_not_nil _ _ _.
+
+Lemma in_not_nil_42_take5 : forall l : list nat, In 42 l -> l <> [].
+Proof.
+  intros.
+  apply (in_not_nil _ _ _ H).
+Qed.
+
+Check In_map_iff _ _ _ _ _.
+
+Example lemma_application_ex : forall {n : nat} {ns : list nat},
+    In n (map (fun m => m * 0) ns) -> n = 0.
+Proof.
+  intros.
+  destruct (proj1 _ _ (In_map_iff _ _ _ _ _) H) as [m [Hm _]].
+  rewrite mul_0_r in Hm.
+  rewrite <- Hm.
+  reflexivity.
+Qed.
+
+
+(* working with decidable properties *)
+Lemma even_double : forall k, even (double k) = true.
+Proof.
+  intros.
+  induction k.
+  - reflexivity.
+  - simpl. apply IHk.
+Qed.
+
+Lemma even_double_conv : forall n, exists k, n = if even n then double k else S (double k).
+Proof.
+  intros.
+  induction n.
+  - exists 0. reflexivity.
+  - destruct IHn.
+    destruct (even n) eqn:Hen.
+    + rewrite -> even_S.
+      rewrite -> Hen.
+      simpl.
+      rewrite -> H.
+      exists x.
+      reflexivity.
+    + rewrite -> even_S.
+      rewrite -> Hen.
+      simpl.
+      exists (S x).
+      rewrite -> H.
+      rewrite <- double_incr.
+      reflexivity.
+Qed.
+
+Theorem even_bool_prop : forall n, even n = true <-> Even n.
+Proof.
+  split.
+  - intros.
+    destruct (even_double_conv n) as [k Hk].
+    rewrite Hk.
+    rewrite H.
+    unfold Even.
+    exists k.
+    reflexivity.
+  - intros.
+    destruct H.
+    rewrite H.
+    apply even_double.
+Qed.
+
+Lemma eqb_eq : forall n m: nat, n =? m = true <-> n = m.
+Proof.
+  intros n m.
+  split.
+  - apply eqb_true.
+  - intros. rewrite H. rewrite eqb_refl. reflexivity.
+Qed.
+
+Lemma plus_eqb_exx : forall n m p: nat, n =? m = true -> n + p =? m + p = true.
+Proof.
+  intros.
+  rewrite eqb_eq in H.
+  rewrite H.
+  rewrite eqb_eq.
+  reflexivity.
+Qed.
+
+Theorem andb_true_iff : forall b1 b2: bool, b1 && b2 = true <-> b1 = true /\ b2 = true.
+Proof.
+  intros.
+  split.
+  - intros.
+    destruct b1.
+    + destruct b2.
+      ++ simpl in H.
+         split.
+         reflexivity.
+         reflexivity.
+      ++ simpl in H.
+         split.
+         reflexivity.
+         inversion H.
+    + simpl in H.
+      inversion H.
+  - intros [H1 H2].
+    rewrite H1.
+    rewrite H2.
+    reflexivity.
+Qed.
+
+Theorem orb_true_iff : forall b1 b2, b1 || b2 = true <-> b1 = true \/ b2 = true.
+Proof.
+  intros.
+  split.
+  - intros.
+    destruct b1.
+    + left. reflexivity.
+    + simpl in H. right. apply H.
+  - intros [H1 | H2].
+    + rewrite H1.
+      reflexivity.
+    + rewrite H2.
+      destruct b1.
+      * reflexivity.
+      * reflexivity.
+Qed.
+
+Theorem eqb_neq : forall x y : nat, x =? y = false <-> x <> y.
+Proof.
+  intros.
+  rewrite <- eqb_eq. (* non sense. *)
+  rewrite <- not_true_iff_false.
+  reflexivity.
+Qed.
+
+Fixpoint eqb_list  {A : Type} (eqb: A -> A -> bool) (l1 l2 : list A) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | h1 :: t1, [] => false
+  | [], h2 :: t2 => false
+  | h1 :: t1, h2 :: t2 => (eqb h1 h2) && eqb_list eqb t1 t2
+  end.
+
+Theorem eqb_list_true_iff : forall A (eqb: A -> A -> bool),
+    (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) -> forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
+Proof.
+  intros.
+  generalize dependent l2.
+  induction l1 as  [|h t IH].
+  - destruct l2.
+    + simpl. split.
+      intros. reflexivity.
+      intros. reflexivity.
+    + simpl. split.
+      intros. inversion H0.
+      intros. inversion H0.
+  - destruct l2.
+    + simpl. split.
+      intros. inversion H0.
+      intros. inversion H0.
+    + simpl. split.
+      * intros.
+        apply andb_true_iff in H0.
+        destruct H0 as [H1 H2].
+        apply H in H1.
+        apply IH in H2.
+        rewrite H1, H2.
+        reflexivity.
+      * intros.
+        inversion H0.
+        apply andb_true_iff.
+        split.
+        apply H. reflexivity.
+        rewrite <- H3.
+        apply IH. reflexivity.
+Qed.
+
+(* forallb *)
+Theorem forallb_true_iff : forall X test (l : list X),
+    forallb test l = true <-> All (fun x => test x = true) l.
+Proof.
+  intros.
+  split.
+  - intros.
+    induction l.
+    + simpl. apply I.
+    + simpl in H.
+      apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      apply IHl in H2.
+      simpl.
+      split.
+      apply H1.
+      apply H2.
+  - intros.
+    induction l.
+    + reflexivity.
+    + simpl.
+      apply andb_true_iff.
+      simpl in H.
+      destruct H as [H1 H2].
+      split.
+      apply H1.
+      apply IHl.
+      apply H2.
+Qed.
+
+(* The Logic of Coq - Functional Extensionality *)
+Axiom functional_extensionality : forall {X Y: Type} {f g: X -> Y},
+    (forall (x: X), f x = g x) -> f = g.
+
+Example function_equality_ex2 : (fun x => plus x 1) = (fun x => plus 1 x).
+Proof.
+  apply functional_extensionality.
+  intros x.
+  apply add_comm.
+Qed.
+
+Print Assumptions function_equality_ex2.
+
+Fixpoint rev_append {X} (l1 l2 : list X) : list X :=
+  match l1 with
+  | [] => l2
+  | x :: l1' => rev_append l1' (x::l2)
+  end.
+
+Definition tr_rev {X} (l : list X) : list X := rev_append l []. (* tail-recursive *)
+
+Theorem tr_rev_correct : forall X, @tr_rev X = @rev X.
+Proof.
+  intros.
+  apply functional_extensionality.
+  intros x.
+  induction x as [|h x' IHx'].
+  - reflexivity.
+  - simpl.
+    unfold tr_rev in IHx'.
+    simpl in IHx'.
+    simpl.
+    rewrite <- IHx'.
+    unfold tr_rev.
+    destruct x'.
+    + reflexivity.
+    + simpl.
+Abort.
 
