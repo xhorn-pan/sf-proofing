@@ -952,3 +952,48 @@ Proof.
     + simpl.
 Abort.
 
+(* classical vs contructive logic *)
+
+Definition excluded_middle := forall P : Prop, P \/ ~ P.
+
+Theorem restricted_excluded_middle : forall P b, (P <-> b = true) -> P \/ ~ P.
+Proof.
+  intros P [] H.
+  left. rewrite H. reflexivity.
+  right. unfold not. rewrite H. intros. discriminate H0.
+Qed.
+
+Theorem restricted_excluded_middle_eq : forall (n m : nat), n = m \/ n <> m.
+Proof.
+  intros n m.
+  apply (restricted_excluded_middle (n = m) (n =? m)).
+  symmetry.
+  apply eqb_eq.
+Qed.
+
+Theorem execuded_middle_irrefutable : forall (P : Prop), ~ ~ (P \/ ~ P).
+Proof.
+  intros P.
+  unfold not.
+  intros.
+  apply H.
+  right.
+  intros.
+  apply H.
+  left.
+  apply H0.
+Qed.
+
+Theorem not_exists_dist : excluded_middle -> forall (X: Type) (P: X -> Prop), ~ (exists x, ~ P x) -> (forall x, P x).
+Proof.
+  unfold excluded_middle.
+  intros.
+  assert (HP : P x \/ ~ P x). (* ** *)
+  - apply H.
+  - destruct HP.
+    + apply H1.
+    + unfold not in H0.
+      destruct H0.
+      exists x.
+      apply H1.
+Qed.
