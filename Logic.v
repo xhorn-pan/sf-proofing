@@ -608,8 +608,8 @@ Proof.
          +++ apply IHl1' in H2.
              simpl in H2.
              destruct H2.
-             { left. right. apply H.}
-             { right. apply H.}
+             * left. right. apply H.
+             * right. apply H.
   - intros.
     induction l1 as [|x1' l1' IHl1'].
     + simpl. simpl in H.
@@ -997,3 +997,11 @@ Proof.
       exists x.
       apply H1.
 Qed.
+
+Definition peirce := forall P Q: Prop, ((P -> Q) -> P) -> P.
+
+Definition double_negation_elimination := forall P : Prop, ~ ~P -> P.
+
+Definition de_morgan_not_and_not := forall P Q : Prop, ~(~P /\ ~Q) -> P \/ Q.
+
+Definition implies_to_or := forall P Q: Prop, (P -> Q) -> (~P \/ Q).
