@@ -763,7 +763,6 @@ Module Pumping.
       apply H. apply IHm.
   Qed.
 
-  (* 
   Lemma weak_pumping : forall T (re : reg_exp T) s,
       s =~ re ->
       pumping_constant re <= length s ->
@@ -777,29 +776,178 @@ Module Pumping.
          | s1 re1 re2 Hmatch IH | re1 s2 re2 Hmatch IH
          | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
     - simpl. intros contra. inversion contra.
-    - simpl. intros contra. apply Sn_le_Sm__n_le_m in contra. inversion contra.
+    - simpl. intros contra.
+      apply Sn_le_Sm__n_le_m in contra. inversion contra.
     - (* MApp *)
-      generalize dependent re2.
-      generalize dependent re1.
-      induction s1.
-      + intros. 
-        simpl in H. 
+      simpl. intros H.
+      rewrite app_length in H.
+      destruct (add_le_cases _ _ _ _ H) as [Hl1 | Hl2].
+      + destruct (IH1 Hl1) as [x1 [x2 [x3 [H0 [H1 H2]]]]].
+        rewrite H0.
+        exists x1, x2, (x3 ++ s2). (* ** *)
+        split.  rewrite <- app_assoc. rewrite <- app_assoc. reflexivity.
+        split. apply H1.
+        intros m.
+        rewrite app_assoc, app_assoc. apply MApp.
+          * rewrite <- app_assoc. apply H2.
+          * apply Hmatch2.
+      + destruct (IH2 Hl2) as [x1 [x2 [x3 [H0 [H1 H2]]]]].
+        rewrite H0.
+        exists (s1 ++ x1), x2, x3.
+        split. rewrite <- app_assoc. reflexivity.
+        split. apply H1.
+        intros m.
+        rewrite <- app_assoc. apply MApp.
+        apply Hmatch1. apply H2.
+    - (* MUnionL *)
+      simpl. intros H.
+      (* apply plus_le in H.
+      apply proj1 in H.
+      apply IH in H.
+       *)
+      destruct (IH (proj1 _ _ (plus_le _ _ _ H)))
+        as [x0 [x1 [x2 [H0 [H1 H2]]]]].
+      exists x0, x1, x2.
+      split. apply H0.
+      split. apply H1.
+      intros m.
+      apply MUnionL. apply H2.
+    - (* MUnionR *)
+      simpl. intros H.
+      destruct (IH (proj2 _ _ (plus_le _ _ _ H)))
+        as [x0 [x1 [x2 [H0 [H1 H2]]]]].
+      exists x0, x1, x2.
+      split. apply H0.
+      split. apply H1.
+      intros m.
+      apply MUnionR. apply H2.
+    - (* MStar0 *)
+      simpl. intros.
+      inversion H.
+      apply pumping_constant_0_false in H2.
+      exfalso. apply H2.
+    - (* MStarApp *)
+      intros H.
+      exists [], (s1 ++ s2), [].
+      rewrite app_nil_r.
+      split. reflexivity.
+      split.
+      {
+        destruct (s1 ++ s2) eqn:Ess.
+        + exfalso. simpl in H. inversion H.
+          apply pumping_constant_0_false in H2. apply H2.
+        + intros. discriminate.
+      }
+      {
+        intros m.
+        rewrite app_nil_r.
         simpl.
-      destruct (add_le_cases _ _ _ _ H).
-      + apply IH1 in H0.
-        destruct H0 as [x1 [x2 [x3 [H0 [H1 H2]]]]].
-        induction s2.
-        * 
-        exists x1, x2, x3.
-        Check (MApp _ _ _ _ Hmatch1 Hmatch2).
-        induction s2.
-        * rewrite app_nil_r.
-          split.
-          apply H0. split.
-          apply H1.
+        induction m.
+        - simpl. apply MStar0.
+        - simpl. apply star_app.
+          + apply (MStarApp _ _ _ Hmatch1 Hmatch2).
+          + apply IHm.
+      }
+  Qed.
 
-
-   *)
-
-
+  Lemma pumping : forall T (re : reg_exp T) s,
+      s =~ re ->
+      pumping_constant re <= length s ->
+      exists s1 s2 s3, s = s1 ++ s2 ++ s3 /\
+                    s <> [] /\
+                    length s1 + length s2 <= pumping_constant re /\
+                    forall m, s1 ++ napp m s2 ++ s3 =~ re.
+  Proof.
+    intros T re s Hmatch.
+    induction Hmatch
+      as [| x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
+         | s1 re1 re2 Hmatch IH | re1 s2 re2 Hmatch IH
+         | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
+    - (* MEmpty *)
+      simpl. intros H. inversion H.
+    - (* MCHar *)
+      simpl. intros H. apply Sn_le_Sm__n_le_m in H. inversion H.
+    - (* MApp *)
+      simpl. intros H.
+      rewrite app_length in H.
+      destruct (add_le_cases _ _ _ _ H) as [Hl1 | Hl2].
+      + destruct (IH1 Hl1) as [x1 [x2 [x3 [H0 [H1 [H2 H3]]]]]].
+        exists x1, x2, (x3 ++ s2). (* ** *)
+  Admitted.
 End Pumping.
+
+(* case study: Improving Reflection *)
+Theorem filter_not_empty_In : forall n l,
+    filter (fun x => n =? x) l <> [] -> In n l.
+Proof.
+  intros n l. induction l as [|m l' IHl'].
+  - simpl. intros. apply H. reflexivity.
+  - simpl. destruct (n =? m) eqn:H.
+    + intros. rewrite eqb_eq in H. rewrite H.
+      left. reflexivity.
+    + intros. right. apply IHl'. apply H0.
+Qed.
+
+Inductive reflect (P: Prop) : bool -> Prop :=
+| ReflectT (H : P) : reflect P true
+| ReflectF (H : ~ P) : reflect P false.
+
+Theorem iff_reflect : forall P b, (P <-> b = true) -> reflect P b.
+Proof.
+  intros P b H.
+  destruct b eqn:Eb.
+  - apply ReflectT. rewrite H. reflexivity.
+  - apply ReflectF. unfold not. rewrite H. discriminate.
+Qed.
+
+Theorem  reflect_iff : forall P b, reflect P b -> (P <-> b = true).
+Proof.
+  intros.
+  inversion H.
+  - split.
+    + intros. reflexivity.
+    + intros. apply H0.
+  - unfold not in H0.
+    split.
+    + intros. exfalso. apply (H0 H2).
+    + intros. discriminate H2.
+Qed.
+
+Lemma eqbP : forall n m, reflect (n = m) (n =? m).
+Proof.
+  intros. apply iff_reflect. rewrite eqb_eq. reflexivity.
+Qed.
+
+Theorem filter_not_empty_In' : forall n l,
+    filter (fun x => n =? x) l <> [] -> In n l.
+Proof.
+  intros n l.
+  induction l as [|m l' IHl'].
+  - simpl. intros H. apply H. reflexivity.
+  - simpl. destruct (eqbP n m) as [H' | H'].
+    + left. symmetry. apply H'.
+    + right. apply IHl'. apply H.
+Qed.
+
+Fixpoint count n l :=
+  match l with
+  | []  => 0
+  | m :: l' => (if n =? m then 1 else 0) + count n l'
+  end.
+
+Theorem eqbP_practice : forall n l,
+    count n l = 0 -> ~ (In n l).
+Proof.
+  intros n l Hcount.
+  induction l as [| m l' IHl'].
+  - unfold not. simpl. intros H. apply H.
+  - simpl in Hcount.
+    destruct (eqbP n m) as [H | H].
+    + discriminate Hcount.
+    + simpl in Hcount. apply IHl' in Hcount.
+      unfold not in Hcount.
+      unfold not in H.
+      unfold not. simpl. intros [H'| H'].
+      apply H. symmetry. apply H'.
+      apply Hcount. apply H'.
+Qed.
