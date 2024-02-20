@@ -31,6 +31,8 @@ Definition ev_plus4'' (n:nat) (H:ev n) : ev (4+n) :=
 Definition ev_plus2 : Prop := forall n, forall (E: ev n), ev (n + 2).
 Definition ev_plus2' : Prop := forall n, forall (_: ev n), ev (n + 2).
 Definition ev_plus2'' : Prop := forall n, ev n -> ev (n + 2).
+(* in general "P->Q" is just syntactic sugar for "forall (_:P), Q" *)
+
 
 (* Logical Connectives as Inductive Types *)
 Module Props.
@@ -136,4 +138,85 @@ Module Props.
 
   Definition ex_ev_Sn : ex (fun n => ev (S n)) :=
     ex_intro (fun n => ev (S n)) 1 (ev_SS 0 ev_0).
+
+  (* True and False *)
+  Inductive True : Prop := | I : True.
+
+  Lemma p_implies_true' : forall P, P -> True.
+  Proof.
+    intros P H.
+    apply I.
+  Qed.
+
+  Definition p_implies_true : forall P, P -> True :=
+    fun P => fun P => I.
+
+  (* False is an inductive type with no constructors,
+     i.e. no way to build evidence for it *)
+  Inductive False : Prop := .
+
+  Definition false_implies_zero_eq_one : False -> 0 = 1 :=
+    fun contra => match contra with end.
+
+  Definition ex_falso_quodlibet' : forall P, False -> P :=
+    fun P => fun contra => match contra with end.
+
+  Module EqualityPlayground.
+    Inductive eq {X:Type} : X -> X -> Prop := |eq_refl : forall x, eq x x.
+    Notation "x == y" := (eq x y)
+                           (at level 70, no associativity) : type_scope.
+    Lemma four : 2 + 2 == 1 + 3.
+    Proof. apply eq_refl. Qed.
+
+    Definition four' : 2 + 2 == 1 + 3 := eq_refl 4.
+
+    Definition singleton : forall (X : Type) (x : X), [] ++ [x] == x::[] :=
+      fun (X:Type) (x:X) => eq_refl [x].
+
+    Definition eq_add : forall (n1 n2 : nat), n1 == n2 -> (S n1) == (S n2) :=
+    fun n1 n2 Heq => match Heq with
+                  | eq_refl n => eq_refl (S n)
+                  end.
+
+    Theorem eq_add' : forall (n1 n2: nat), n1 == n2 -> (S n1) == (S n2).
+    Proof.
+      intros n1 n2 Heq.
+      Fail rewrite Heq.
+      destruct Heq.
+      Fail reflexivity.
+      apply eq_refl.
+    Qed.
+
+    Lemma eq_cons' : forall (X:Type) (h1 h2: X) (t1 t2 : list X),
+        h1 == h2 -> t1 == t2 -> h1 :: t1 == h2 :: t2.
+    Proof.
+      intros.
+      destruct H, H0.
+      apply eq_refl.
+    Qed.
+
+    Definition eq_cons : forall (X:Type) (h1 h2 : X) (t1 t2 : list X),
+        h1 == h2 -> t1 == t2 -> h1 :: t1 == h2 :: t2 :=
+      fun X h1 h2 t1 t2 Heqh Heqt =>
+        match Heqh, Heqt with
+        | eq_refl h, eq_refl t => eq_refl (h :: t)
+        end.
+
+    Lemma equality__leibniz_equality : forall (X:Type) (x y: X),
+        x == y -> forall (P : X -> Prop), P x -> P y.
+    Proof. intros. destruct H. apply H0. Qed.
+
+    Definition equality__leibniz_equality_term : forall (X: Type) (x y: X),
+        x == y -> forall P: (X -> Prop), P x -> P y :=
+      fun X x y Heq => match Heq with
+                    | eq_refl x => fun P => fun x => x
+                    end.
+    Lemma leibniz_equality__equality : forall (X : Type) (x y : X),
+        (forall P: X->Prop, P x -> P y) -> x == y.
+    Proof.
+      intros X x y Hleibniz.
+      apply Hleibniz. apply eq_refl.
+    Qed.
+
+  End EqualityPlayground.
 End Props.
