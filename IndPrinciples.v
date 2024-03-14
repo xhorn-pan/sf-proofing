@@ -71,3 +71,89 @@ Proof.
   exists con1, con2.
   exact Toy_ind.
 Qed.
+
+(* Ploymorphism *)
+Inductive list (X : Type) : Type :=
+| nil : list X
+| cons : X -> list X -> list X.
+
+Inductive tree (X : Type) : Type :=
+| leaf (x : X)
+| node (t1 t2 : tree X).
+
+Check tree_ind.
+
+Inductive mytype (X : Type) : Type :=
+| constr1 (x : X)
+| constr2 (n : nat)
+| constr3 (m : mytype X) (n : nat).
+
+Check mytype_ind.
+
+Inductive foo (X Y : Type) : Type :=
+| bar (x : X)
+| baz (y : Y)
+| quux : (nat -> foo X Y) -> nat -> foo X Y. (* ** *)
+
+Check foo_ind.
+
+Inductive foo' (X : Type) : Type :=
+| C1 (l : list X) (f : foo' X)
+| C2.
+
+(* foo'_ind :
+   forall (X : Type) (P : foo' X -> Prop),
+       (forall (l : list X) (f: foo' X),
+               P f -> P (C1 X l f)) ->
+       P (C2 X) ->
+       forall f1 : foo' X, P f1
+*)
+Check foo'_ind.
+
+(* Induction Hypotheses *)
+Definition P_m0r (n:nat) : Prop := n * 0 = 0.
+Definition P_m0r' : nat -> Prop := fun n => n * 0 = 0.
+Theorem mul_0_r'' : forall n:nat, P_m0r n.
+Proof.
+  apply nat_ind.
+  - reflexivity.
+  - intros.
+    unfold P_m0r in H.
+    unfold P_m0r.
+    simpl. apply H.
+Qed.
+(* The induction hypothesis is the premise of this latter implication
+-- the assumption that P holds of n', which we are allowed to use in
+proving that P holds for S n'. *)
+
+(* More on the induction Tactic *)
+(* add_comm' *)
+Definition P_add_comm' (n m : nat) : Prop := n + m = m + n.
+Theorem add_comm' : forall n m : nat, P_add_comm' n m.
+Proof.
+  intros n.
+  apply nat_ind.
+  - unfold P_add_comm'. rewrite <- plus_n_O. simpl. reflexivity.
+  - intros.
+    unfold P_add_comm' in H.
+    unfold P_add_comm'.
+    simpl. rewrite <- H.
+    rewrite plus_n_Sm.
+    reflexivity.
+Qed.
+(* add_assoc' *)
+Definition P_add_assoc' (n m p : nat) : Prop := n + (m + p) = (n + m) + p.
+Theorem add_assoc' : forall n m p : nat, P_add_assoc' n m p.
+Proof.
+  intros.
+  apply nat_ind.
+  - unfold P_add_assoc'. rewrite <- plus_n_O. rewrite <- plus_n_O. reflexivity.
+  - intros.
+    unfold P_add_assoc' in H.
+    unfold P_add_assoc'.
+    rewrite <- plus_n_Sm.
+    rewrite <- plus_n_Sm.
+    rewrite H.
+    rewrite plus_n_Sm.
+    reflexivity.
+Qed.
