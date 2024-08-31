@@ -1,7 +1,11 @@
 *.vo*
 *.aux
 *.glob
+*.*~
 
+CoqMakefile.conf
 Makefile
 Makefile.conf
 .Makefile.d
+
+
