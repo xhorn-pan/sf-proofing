@@ -192,11 +192,22 @@ Inductive com : Type :=
 | CIf (b : bexp) (c1 c2 : com)
 | CWhile (b : bexp) (c : com).
 
-Notation "'skip'" := CSkip (in custom com).
-Notation "x '::=' a" := (CAsgn x a) (in custom com at level 100).
-Notation "c1 ; c2" := (CSeq c1 c2) (in custom com at level 100, right associativity).
-Notation "'while' b 'do' c 'end'" := (CWhile b c) (in custom com at level 100, right associativity).
-Notation "'if' b 'then' c1 'else' c2 'end'" := (CIf b c1 c2) (in custom com at level 100, right associativity).
+Notation "'skip'" := CSkip (in custom com at level 0) : com_scope.
+Notation "x ::= y" :=
+  (CAsgn x y)
+    (in custom com at level 0, x constr at level 0,
+        y at level 85, no associativity) : com_scope.
+Notation "c1 ; c2" :=
+  (CSeq c1 c2)
+    (in custom com at level 90, right associativity) : com_scope.
+Notation "'while' b 'do' c 'end'" :=
+  (CWhile b c)
+    (in custom com at level 89,
+        b at level 99, c at level 99) : com_scope.
+Notation "'if' b 'then' c1 'else' c2 'end'" :=
+  (CIf b c1 c2)
+    (in custom com at level 89,
+        b at level 99, c1 at level 99, c2 at level 99) : com_scope.
                                    
 Definition fact_in_coq : com := <{
       Z ::= X;
@@ -205,7 +216,7 @@ Definition fact_in_coq : com := <{
                     Y ::= Y * Z;
                     Z ::= Z - 1
                     end }>. 
-Unset Printing Notaions.
+Unset Printing Notations.
 Print fact_in_coq.
 Set Printing Notations.
 Print fact_in_coq.
