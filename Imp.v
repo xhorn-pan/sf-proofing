@@ -196,7 +196,7 @@ Notation "'skip'" := CSkip (in custom com).
 Notation "x '::=' a" := (CAsgn x a) (in custom com at level 100).
 Notation "c1 ; c2" := (CSeq c1 c2) (in custom com at level 100, right associativity).
 Notation "'while' b 'do' c 'end'" := (CWhile b c) (in custom com at level 100, right associativity).
-Notation "'if' b 'then' c1 'else' c2 'fi'" := (CIf b c1 c2) (in custom com at level 100, right associativity).
+Notation "'if' b 'then' c1 'else' c2 'end'" := (CIf b c1 c2) (in custom com at level 100, right associativity).
                                    
 Definition fact_in_coq : com := <{
       Z ::= X;
